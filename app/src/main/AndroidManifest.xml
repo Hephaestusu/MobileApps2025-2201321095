@@ -13,7 +13,8 @@
         android:theme="@style/Theme.TaskHep">
         <activity
             android:name=".AddEditTaskActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".MainActivity"
             android:exported="true">

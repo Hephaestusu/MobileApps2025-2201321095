@@ -23,11 +23,14 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         val isDark = prefs.getBoolean(KEY_DARK_MODE, false)
-
-        AppCompatDelegate.setDefaultNightMode(
-            if (isDark) AppCompatDelegate.MODE_NIGHT_YES
-            else AppCompatDelegate.MODE_NIGHT_NO
-        )
+        val targetMode = if (isDark) {
+            AppCompatDelegate.MODE_NIGHT_YES
+        } else {
+            AppCompatDelegate.MODE_NIGHT_NO
+        }
+        if (AppCompatDelegate.getDefaultNightMode() != targetMode) {
+            AppCompatDelegate.setDefaultNightMode(targetMode)
+        }
 
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -35,17 +38,18 @@ class MainActivity : AppCompatActivity() {
         val switchTheme: SwitchMaterial = findViewById(R.id.switchTheme)
         val rvTasks: RecyclerView = findViewById(R.id.rvTasks)
         val fabAddTask: FloatingActionButton = findViewById(R.id.fabAddTask)
-
         switchTheme.isChecked = isDark
         switchTheme.setOnCheckedChangeListener { _, checked ->
-            AppCompatDelegate.setDefaultNightMode(
-                if (checked) AppCompatDelegate.MODE_NIGHT_YES
-                else AppCompatDelegate.MODE_NIGHT_NO
-            )
             prefs.edit().putBoolean(KEY_DARK_MODE, checked).apply()
-            recreate()
-        }
 
+            val mode = if (checked) {
+                AppCompatDelegate.MODE_NIGHT_YES
+            } else {
+                AppCompatDelegate.MODE_NIGHT_NO
+            }
+
+            AppCompatDelegate.setDefaultNightMode(mode)
+        }
         adapter = TaskAdapter { task ->
             val intent = Intent(this, AddEditTaskActivity::class.java)
             intent.putExtra("task_id", task.id)
