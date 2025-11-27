@@ -7,6 +7,8 @@ import androidx.appcompat.app.AppCompatActivity
 
 class AddEditTaskActivity : AppCompatActivity() {
 
+    private var taskId: Int? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_add_edit_task)
@@ -14,6 +16,17 @@ class AddEditTaskActivity : AppCompatActivity() {
         val etTitle: EditText = findViewById(R.id.etTitle)
         val etDescription: EditText = findViewById(R.id.etDescription)
         val btnSave: Button = findViewById(R.id.btnSave)
+        val btnCancel: Button = findViewById(R.id.btnCancel)
+
+        val idFromIntent = intent.getIntExtra("task_id", -1)
+        if (idFromIntent != -1) {
+            taskId = idFromIntent
+            val titleFromIntent = intent.getStringExtra("task_title") ?: ""
+            val descFromIntent = intent.getStringExtra("task_description") ?: ""
+
+            etTitle.setText(titleFromIntent)
+            etDescription.setText(descFromIntent)
+        }
 
         btnSave.setOnClickListener {
             val title = etTitle.text.toString().trim()
@@ -26,17 +39,33 @@ class AddEditTaskActivity : AppCompatActivity() {
 
             Thread {
                 val db = TaskDatabase.getDatabase(this)
-                db.taskDao().insert(
-                    Task(
-                        title = title,
-                        description = description
+                val dao = db.taskDao()
+
+                if (taskId == null) {
+                    dao.insert(
+                        Task(
+                            title = title,
+                            description = description
+                        )
                     )
-                )
+                } else {
+                    dao.update(
+                        Task(
+                            id = taskId!!,
+                            title = title,
+                            description = description
+                        )
+                    )
+                }
 
                 runOnUiThread {
                     finish()
                 }
             }.start()
+        }
+
+        btnCancel.setOnClickListener {
+            finish()
         }
     }
 }
