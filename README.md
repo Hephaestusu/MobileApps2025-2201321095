@@ -131,18 +131,17 @@ cd MobileApps2025-2203121095
 ## 9. Скриншотове
 
 ### Главен екран
-![Main screen](screenshots/main.png)
+<img src="screenshots/main.png" alt="Главен екран" width="600" />
 
 ### Добавяне / Редакция на задача
-![Add Edit](screenshots/add_task.png)
+<img src="screenshots/add_task.png" alt="Add/Edit" width="600" />
 
 ### Настройки – избор на цвят
-![Settings](screenshots/settings.png)
+<img src="screenshots/settings.png" alt="Настройки" width="600" />
 
 ### Swipe за изтриване
-![Swipe delete](screenshots/swipe_delete.png)
+<img src="screenshots/swipe_delete.png" alt="Swipe за изтриване" width="600" />
 
 ### Share Sheet
-![Share](screenshots/share.png)
-
+<img src="screenshots/share.png" alt="Share Sheet" width="600" />
 
