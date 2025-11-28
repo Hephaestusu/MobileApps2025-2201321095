@@ -121,6 +121,58 @@ TaskHep е минималистично приложение тип **to-do list
 
 ### 5.1. Клониране
 
-```bash
 git clone https://github.com/Hephaestusu/MobileApps2025-2203121095.git
 cd MobileApps2025-2203121095
+
+###5.2. Отваряне
+
+Отвори проекта в Android Studio
+
+Изчакай Gradle Sync да приключи
+
+###5.3. Стартиране
+
+Натисни Run ▶
+
+Избери емулатор или реално Android устройство
+
+###6. APK
+
+Файлът се намира в:
+
+/apk/app-release.apk
+
+
+Размер: 4.9 MB (изискване: ≤ 60 MB — покрито ✔)
+
+###7. Използвани технологии
+
+Kotlin
+
+Room Database
+
+RecyclerView
+
+Material Components
+
+SharedPreferences
+
+Intents (Share)
+
+MVVM (ViewModel + Repository)
+
+Espresso UI Tests / JUnit Unit tests
+
+###8. Идеи за бъдещи подобрения
+
+категории задачи;
+
+нотификации за задачи;
+
+widget за home screen;
+
+синхронизация с облак;
+
+drag-and-drop за подреждане на задачи.
+
+9. Скриншотове
