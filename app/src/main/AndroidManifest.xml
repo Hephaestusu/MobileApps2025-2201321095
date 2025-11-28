@@ -12,6 +12,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.TaskHep">
         <activity
+            android:name=".SettingsActivity"
+            android:exported="false" />
+        <activity
             android:name=".AddEditTaskActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />

@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">TaskHep</string>
     <string name="add_task">Add task</string>
+    <string name="settings">Settings</string>
 </resources>

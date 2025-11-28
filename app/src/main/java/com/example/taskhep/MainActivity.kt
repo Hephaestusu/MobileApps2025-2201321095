@@ -1,14 +1,19 @@
 package com.example.taskhep
 
 import android.content.Intent
+import android.content.res.ColorStateList
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.RectF
 import android.os.Bundle
+import android.widget.ImageButton
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -22,6 +27,7 @@ class MainActivity : AppCompatActivity() {
     companion object {
         private const val PREFS_NAME = "settings"
         private const val KEY_DARK_MODE = "dark_mode"
+        private const val KEY_ACCENT_COLOR = "accent_color"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -40,22 +46,40 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        val root = findViewById<androidx.constraintlayout.widget.ConstraintLayout>(R.id.rootMain)
         val switchTheme: SwitchMaterial = findViewById(R.id.switchTheme)
         val rvTasks: RecyclerView = findViewById(R.id.rvTasks)
         val fabAddTask: FloatingActionButton = findViewById(R.id.fabAddTask)
+        val btnSettings: ImageButton = findViewById(R.id.btnSettings)
+        ViewCompat.setOnApplyWindowInsetsListener(root) { v, insets ->
+            val statusBars = insets.getInsets(WindowInsetsCompat.Type.statusBars())
+            val density = resources.displayMetrics.density
+            val extraTop = (8f * density).toInt()
+            v.setPadding(
+                v.paddingLeft,
+                statusBars.top + extraTop,
+                v.paddingRight,
+                v.paddingBottom
+            )
+            insets
+        }
+
         switchTheme.isChecked = isDark
 
         switchTheme.setOnCheckedChangeListener { _, checked ->
             prefs.edit().putBoolean(KEY_DARK_MODE, checked).apply()
-
             val mode = if (checked) {
                 AppCompatDelegate.MODE_NIGHT_YES
             } else {
                 AppCompatDelegate.MODE_NIGHT_NO
             }
-
             AppCompatDelegate.setDefaultNightMode(mode)
         }
+
+        btnSettings.setOnClickListener {
+            startActivity(Intent(this, SettingsActivity::class.java))
+        }
+
         adapter = TaskAdapter { task ->
             val intent = Intent(this, AddEditTaskActivity::class.java)
             intent.putExtra("task_id", task.id)
@@ -66,6 +90,7 @@ class MainActivity : AppCompatActivity() {
 
         rvTasks.layoutManager = LinearLayoutManager(this)
         rvTasks.adapter = adapter
+
         val itemTouchHelper = ItemTouchHelper(object :
             ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT) {
 
@@ -105,11 +130,12 @@ class MainActivity : AppCompatActivity() {
             ) {
                 val itemView = viewHolder.itemView
 
-                if (dX < 0) {
+                if (dX < 0) { // свайп влево
                     val density = recyclerView.resources.displayMetrics.density
                     val verticalMargin = 8f * density
                     val horizontalPadding = 8f * density
                     val cornerRadius = 12f * density
+
                     val left = itemView.right.toFloat() + dX + horizontalPadding
                     val right = itemView.right.toFloat() - horizontalPadding
                     val top = itemView.top.toFloat() + verticalMargin
@@ -117,6 +143,7 @@ class MainActivity : AppCompatActivity() {
 
                     val background = RectF(left, top, right, bottom)
                     c.drawRoundRect(background, cornerRadius, cornerRadius, deletePaint)
+
                     val deleteIcon = ContextCompat.getDrawable(
                         this@MainActivity,
                         android.R.drawable.ic_menu_delete
@@ -151,11 +178,46 @@ class MainActivity : AppCompatActivity() {
             val intent = Intent(this, AddEditTaskActivity::class.java)
             startActivity(intent)
         }
+
+        applyAccentColor()
     }
 
     override fun onResume() {
         super.onResume()
         loadTasksFromDb()
+        applyAccentColor()
+    }
+
+    private fun applyAccentColor() {
+        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        val defaultColor = ContextCompat.getColor(this, R.color.accent_purple)
+        val accent = prefs.getInt(KEY_ACCENT_COLOR, defaultColor)
+
+        val tvAppTitle: TextView = findViewById(R.id.tvAppTitle)
+        val fabAddTask: FloatingActionButton = findViewById(R.id.fabAddTask)
+        val switchTheme: SwitchMaterial = findViewById(R.id.switchTheme)
+        val btnSettings: ImageButton = findViewById(R.id.btnSettings)
+
+        tvAppTitle.setTextColor(accent)
+        fabAddTask.backgroundTintList = ColorStateList.valueOf(accent)
+        btnSettings.imageTintList = ColorStateList.valueOf(accent)
+
+        val thumb = ColorStateList.valueOf(accent)
+        val track = ColorStateList.valueOf(adjustAlpha(accent, 0.4f))
+        switchTheme.thumbTintList = thumb
+        switchTheme.trackTintList = track
+
+        if (::adapter.isInitialized) {
+            adapter.notifyDataSetChanged()
+        }
+    }
+
+    private fun adjustAlpha(color: Int, factor: Float): Int {
+        val alpha = (Color.alpha(color) * factor).toInt()
+        val red = Color.red(color)
+        val green = Color.green(color)
+        val blue = Color.blue(color)
+        return Color.argb(alpha, red, green, blue)
     }
 
     private fun loadTasksFromDb() {
