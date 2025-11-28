@@ -81,7 +81,7 @@ TaskHep е минималистично приложение тип **to-do list
 ### 5.1. Клониране
 
 ```bash
-git clone https://github.com/Hephaestusu/MobileApps2025-2203121095.git
+git clone https://github.com/Hephaestusu/MobileApps2025-2201321095.git
 cd MobileApps2025-2203121095
 ````
 
