@@ -1,7 +1,7 @@
 # TaskHep
 
 Мобилно приложение за управление на задачи по дисциплината **„Мобилни приложения“**.  
-ФН: **2201321095**
+ФН: **2201321095**  
 Преподавател: **гл. ас. д-р Георги Пашев**
 
 ---
@@ -22,98 +22,57 @@ TaskHep е минималистично приложение тип **to-do list
 
 ## 2. Как работи приложението
 
-### Основни екрани
+### 2.1. Main screen (Task list)
 
-1. **Main screen (Task list)**
-   - показва списък от задачи от локалната Room база;
-   - всяка задача е визуализирана като MaterialCard с заглавие и описание;
-   - бутон **`+` FloatingActionButton** отваря екран за създаване на нова задача;
-   - tap върху задача отваря екран за редакция;
-   - swipe наляво върху задача изтрива задачата (показва се червен фон с икона „кошче“);
-   - горе вдясно има:
-     - **Dark mode Switch** – включва/изключва тъмна тема;
-     - бутон **Settings** – отваря екран за избор на accent цвят.
+- показва списък от задачи от Room база;
+- всяка задача е MaterialCard с рамка според accent цвета;
+- swipe наляво → фон + икона „кошче“ + потвърждение за изтриване;
+- FAB `+` → нова задача;
+- горе вдясно: Dark Mode switch + бутон Settings.
 
-2. **Add / Edit Task**
-   - два `EditText` полета: **Title** и **Description**;
-   - бутони:
-     - **Save** – създава нов запис или обновява съществуващ в Room;
-     - **Cancel** – затваря екрана без промяна;
-     - **Share** – споделя задачата чрез `ACTION_SEND` (SMS, мейл, месинджъри и др.);
-   - при празно заглавие се показва грешка и записът не се съхранява.
+### 2.2. Add / Edit Task
 
-3. **Settings (Цветова тема)**
-   - бутони за избор на един от 5 accent цвята: **red, green, blue, purple, yellow**;
-   - изборът се записва в `SharedPreferences` и се прилага към:
-     - FAB бутона;
-     - заглавията;
-     - рамките на картите със задачи;
-     - бутони на Add/Edit екрана;
-     - превключвателя за тъмна тема.
+- полета: **Title**, **Description**;
+- бутони: **Save**, **Cancel**, **Share**;
+- Share → системния share sheet;
+- празно заглавие → грешка.
+
+### 2.3. Settings (Accent Color)
+
+- пет цвята: red, green, blue, purple, yellow;
+- запис в SharedPreferences;
+- UI веднага се обновява.
 
 ---
 
 ## 3. Архитектура
 
-Приложението използва **слойна архитектура** с разделяне на UI и данни.
+### 3.1. UI слой
+- MainActivity  
+- AddEditTaskActivity  
+- SettingsActivity  
+- TaskAdapter  
 
-> **Забележка:** ако все още не сме довършили MVVM/Repository в кода, това е целевият дизайн, към който е насочен проектът. При финален вариант трябва кодът да съответства на описанието.
+### 3.2. Data слой
+- Task (Entity)  
+- TaskDao (CRUD)  
+- TaskDatabase (Room)  
+- SharedPreferences  
 
-### Слоеве
-
-- **UI слой (Activities + Adapter)**
-  - `MainActivity` – показва списъка със задачи, swipe-delete, превключване на тема и navigation към Settings / AddEdit.
-  - `AddEditTaskActivity` – екран за създаване/редакция/споделяне на задача.
-  - `SettingsActivity` – избор на accent цвят.
-  - `TaskAdapter` – `RecyclerView` adapter за визуализация на задачите.
-
-- **Data слой (Room + Repository)**
-  - `Task` – `@Entity` за таблицата `tasks` (id, title, description).
-  - `TaskDao` – `@Dao` с методи `getAllTasks()`, `insert()`, `update()`, `delete()`.
-  - `TaskDatabase` – `RoomDatabase`, singleton инстанция за цялото приложение.
-  - `SharedPreferences` – съхранява настройки за:
-    - dark mode (`dark_mode`);
-    - accent цвят (`accent_color`).
-
-- **(По план) MVVM слой**
-  - `TaskRepository` – капсулира достъпа до `TaskDao` и връща данни към ViewModel.
-  - `TaskViewModel` – държи състоянието на списъка със задачи и делегира CRUD операциите към Repository.
-  - UI слуша ViewModel чрез LiveData/StateFlow и се обновява при промени.
+### 3.3. MVVM слой
+- TaskRepository  
+- TaskViewModel  
 
 ---
 
-## 4. Потребителски поток (User Flow)
+## 4. Потребителски поток
 
-1. **Стартиране**
-   - чете се последно избраният **accent цвят** и режим (light/dark);
-   - MainActivity се стартира с приложените настройки.
-
-2. **Създаване на задача**
-   - потребителят натиска `+` FAB;
-   - отваря се AddEditTaskActivity в режим *Create*;
-   - въвежда заглавие и описание → **Save**;
-   - записът се съхранява в Room и потребителят се връща към MainActivity;
-   - списъкът се обновява.
-
-3. **Редактиране на задача**
-   - tap върху съществуваща задача;
-   - AddEditTaskActivity се отваря в режим *Edit* с попълнени полета;
-   - потребителят променя текста → **Save** → записът се обновява.
-
-4. **Изтриване на задача**
-   - потребителят прави swipe наляво върху задача;
-   - показва се червен фон и икона „кошче“;
-   - при довършен swipe задачата се изтрива от Room и се премахва от списъка.
-
-5. **Споделяне на задача**
-   - на Add/Edit екрана → бутон **Share**;
-   - формира се текст със заглавие и описание;
-   - показва се системният share sheet и потребителят избира приложение.
-
-6. **Смяна на тема и цветове**
-   - превключвател Dark mode – сменя светла/тъмна тема глобално;
-   - бутон Settings – отваря екран за избор на accent цвят;
-   - при избор новият цвят се записва и при връщане към MainActivity UI се оцветява с него.
+1. Стартиране → зареждане на тема и accent цвят  
+2. FAB → Add Task  
+3. Tap → Edit Task  
+4. Swipe → Delete + Confirm dialog  
+5. Share → ACTION_SEND  
+6. Settings → избор на цвят  
 
 ---
 
@@ -121,58 +80,53 @@ TaskHep е минималистично приложение тип **to-do list
 
 ### 5.1. Клониране
 
+```bash
 git clone https://github.com/Hephaestusu/MobileApps2025-2203121095.git
 cd MobileApps2025-2203121095
+````
 
-###5.2. Отваряне
+### 5.2. Отваряне в Android Studio
 
-Отвори проекта в Android Studio
+* File → Open
+* Изчакай Gradle Sync
 
-Изчакай Gradle Sync да приключи
+### 5.3. Стартиране
 
-###5.3. Стартиране
+* Run ▶
+* избери емулатор или реално устройство
 
-Натисни Run ▶
+---
 
-Избери емулатор или реално Android устройство
-
-###6. APK
+## 6. APK
 
 Файлът се намира в:
 
-/apk/app-release.apk
+**/apk/app-release.apk**
+---
 
+## 7. Използвани технологии
 
-Размер: 4.9 MB (изискване: ≤ 60 MB — покрито ✔)
+* Kotlin
+* Room Database
+* RecyclerView
+* Material Components
+* SharedPreferences
+* MVVM (ViewModel + Repository)
+* Intents (Share)
+* Espresso UI Tests
+* JUnit Unit Tests
 
-###7. Използвани технологии
+---
 
-Kotlin
+## 8. Идеи за бъдещи подобрения
 
-Room Database
+* категории задачи
+* нотификации
+* widget
+* cloud sync
+* drag & drop подреждане
 
-RecyclerView
+---
 
-Material Components
+## 9. Скриншотове
 
-SharedPreferences
-
-Intents (Share)
-
-MVVM (ViewModel + Repository)
-
-Espresso UI Tests / JUnit Unit tests
-
-###8. Идеи за бъдещи подобрения
-
-категории задачи;
-
-нотификации за задачи;
-
-widget за home screen;
-
-синхронизация с облак;
-
-drag-and-drop за подреждане на задачи.
-
-9. Скриншотове
