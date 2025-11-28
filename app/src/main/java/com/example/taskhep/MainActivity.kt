@@ -1,10 +1,14 @@
 package com.example.taskhep
 
 import android.content.Intent
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
+import android.graphics.RectF
 import android.os.Bundle
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -28,6 +32,7 @@ class MainActivity : AppCompatActivity() {
         } else {
             AppCompatDelegate.MODE_NIGHT_NO
         }
+
         if (AppCompatDelegate.getDefaultNightMode() != targetMode) {
             AppCompatDelegate.setDefaultNightMode(targetMode)
         }
@@ -39,6 +44,7 @@ class MainActivity : AppCompatActivity() {
         val rvTasks: RecyclerView = findViewById(R.id.rvTasks)
         val fabAddTask: FloatingActionButton = findViewById(R.id.fabAddTask)
         switchTheme.isChecked = isDark
+
         switchTheme.setOnCheckedChangeListener { _, checked ->
             prefs.edit().putBoolean(KEY_DARK_MODE, checked).apply()
 
@@ -61,7 +67,12 @@ class MainActivity : AppCompatActivity() {
         rvTasks.layoutManager = LinearLayoutManager(this)
         rvTasks.adapter = adapter
         val itemTouchHelper = ItemTouchHelper(object :
-            ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT) {
+            ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT) {
+
+            private val deletePaint = Paint().apply {
+                color = Color.parseColor("#B00020")
+                isAntiAlias = true
+            }
 
             override fun onMove(
                 recyclerView: RecyclerView,
@@ -73,26 +84,64 @@ class MainActivity : AppCompatActivity() {
                 val position = viewHolder.adapterPosition
                 val taskToDelete = adapter.getItemAt(position)
 
-                AlertDialog.Builder(this@MainActivity)
-                    .setTitle("Delete task")
-                    .setMessage("Are you sure you want to delete this task?")
-                    .setPositiveButton("Delete") { _, _ ->
-                        Thread {
-                            val db = TaskDatabase.getDatabase(this@MainActivity)
-                            db.taskDao().delete(taskToDelete)
+                Thread {
+                    val db = TaskDatabase.getDatabase(this@MainActivity)
+                    db.taskDao().delete(taskToDelete)
 
-                            runOnUiThread {
-                                loadTasksFromDb()
-                            }
-                        }.start()
+                    runOnUiThread {
+                        loadTasksFromDb()
                     }
-                    .setNegativeButton("Cancel") { _, _ ->
-                        adapter.notifyItemChanged(position)
+                }.start()
+            }
+
+            override fun onChildDraw(
+                c: Canvas,
+                recyclerView: RecyclerView,
+                viewHolder: RecyclerView.ViewHolder,
+                dX: Float,
+                dY: Float,
+                actionState: Int,
+                isCurrentlyActive: Boolean
+            ) {
+                val itemView = viewHolder.itemView
+
+                if (dX < 0) {
+                    val density = recyclerView.resources.displayMetrics.density
+                    val verticalMargin = 8f * density
+                    val horizontalPadding = 8f * density
+                    val cornerRadius = 12f * density
+                    val left = itemView.right.toFloat() + dX + horizontalPadding
+                    val right = itemView.right.toFloat() - horizontalPadding
+                    val top = itemView.top.toFloat() + verticalMargin
+                    val bottom = itemView.bottom.toFloat() - verticalMargin
+
+                    val background = RectF(left, top, right, bottom)
+                    c.drawRoundRect(background, cornerRadius, cornerRadius, deletePaint)
+                    val deleteIcon = ContextCompat.getDrawable(
+                        this@MainActivity,
+                        android.R.drawable.ic_menu_delete
+                    )
+
+                    deleteIcon?.let { icon ->
+                        val iconWidth = icon.intrinsicWidth
+                        val iconHeight = icon.intrinsicHeight
+
+                        val iconRight = right - 16f * density
+                        val iconLeft = iconRight - iconWidth
+                        val iconTop = top + (bottom - top - iconHeight) / 2
+                        val iconBottom = iconTop + iconHeight
+
+                        icon.setBounds(
+                            iconLeft.toInt(),
+                            iconTop.toInt(),
+                            iconRight.toInt(),
+                            iconBottom.toInt()
+                        )
+                        icon.draw(c)
                     }
-                    .setOnCancelListener {
-                        adapter.notifyItemChanged(position)
-                    }
-                    .show()
+                }
+
+                super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive)
             }
         })
 
