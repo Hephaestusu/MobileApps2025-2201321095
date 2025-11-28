@@ -9,11 +9,15 @@ import android.graphics.RectF
 import android.os.Bundle
 import android.widget.ImageButton
 import android.widget.TextView
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.lifecycle.Observer
+import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -23,6 +27,7 @@ import com.google.android.material.switchmaterial.SwitchMaterial
 class MainActivity : AppCompatActivity() {
 
     private lateinit var adapter: TaskAdapter
+    private lateinit var viewModel: TaskViewModel
 
     companion object {
         private const val PREFS_NAME = "settings"
@@ -38,7 +43,6 @@ class MainActivity : AppCompatActivity() {
         } else {
             AppCompatDelegate.MODE_NIGHT_NO
         }
-
         if (AppCompatDelegate.getDefaultNightMode() != targetMode) {
             AppCompatDelegate.setDefaultNightMode(targetMode)
         }
@@ -46,11 +50,14 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val root = findViewById<androidx.constraintlayout.widget.ConstraintLayout>(R.id.rootMain)
+        viewModel = ViewModelProvider(this)[TaskViewModel::class.java]
+
+        val root = findViewById<ConstraintLayout>(R.id.rootMain)
         val switchTheme: SwitchMaterial = findViewById(R.id.switchTheme)
         val rvTasks: RecyclerView = findViewById(R.id.rvTasks)
         val fabAddTask: FloatingActionButton = findViewById(R.id.fabAddTask)
         val btnSettings: ImageButton = findViewById(R.id.btnSettings)
+
         ViewCompat.setOnApplyWindowInsetsListener(root) { v, insets ->
             val statusBars = insets.getInsets(WindowInsetsCompat.Type.statusBars())
             val density = resources.displayMetrics.density
@@ -65,7 +72,6 @@ class MainActivity : AppCompatActivity() {
         }
 
         switchTheme.isChecked = isDark
-
         switchTheme.setOnCheckedChangeListener { _, checked ->
             prefs.edit().putBoolean(KEY_DARK_MODE, checked).apply()
             val mode = if (checked) {
@@ -91,6 +97,10 @@ class MainActivity : AppCompatActivity() {
         rvTasks.layoutManager = LinearLayoutManager(this)
         rvTasks.adapter = adapter
 
+        viewModel.tasks.observe(this, Observer { tasks ->
+            adapter.submitList(tasks)
+        })
+
         val itemTouchHelper = ItemTouchHelper(object :
             ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT) {
 
@@ -109,14 +119,31 @@ class MainActivity : AppCompatActivity() {
                 val position = viewHolder.adapterPosition
                 val taskToDelete = adapter.getItemAt(position)
 
-                Thread {
-                    val db = TaskDatabase.getDatabase(this@MainActivity)
-                    db.taskDao().delete(taskToDelete)
-
-                    runOnUiThread {
-                        loadTasksFromDb()
+                val builder = AlertDialog.Builder(this@MainActivity)
+                    .setTitle("Delete task?")
+                    .setMessage("Are you sure you want to delete this task?")
+                    .setPositiveButton("Delete") { _, _ ->
+                        viewModel.deleteTask(taskToDelete)
                     }
-                }.start()
+                    .setNegativeButton("Cancel") { _, _ ->
+                        adapter.notifyItemChanged(position)
+                    }
+                    .setOnCancelListener {
+                        adapter.notifyItemChanged(position)
+                    }
+
+                val dialog = builder.create()
+
+                dialog.setOnShowListener {
+                    val accent = getAccentColor()
+                    val positive = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+                    val negative = dialog.getButton(AlertDialog.BUTTON_NEGATIVE)
+
+                    positive?.setTextColor(accent)
+                    negative?.setTextColor(accent)
+                }
+
+                dialog.show()
             }
 
             override fun onChildDraw(
@@ -130,7 +157,7 @@ class MainActivity : AppCompatActivity() {
             ) {
                 val itemView = viewHolder.itemView
 
-                if (dX < 0) { // свайп влево
+                if (dX < 0) {
                     val density = recyclerView.resources.displayMetrics.density
                     val verticalMargin = 8f * density
                     val horizontalPadding = 8f * density
@@ -168,7 +195,15 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
 
-                super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive)
+                super.onChildDraw(
+                    c,
+                    recyclerView,
+                    viewHolder,
+                    dX,
+                    dY,
+                    actionState,
+                    isCurrentlyActive
+                )
             }
         })
 
@@ -184,14 +219,12 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        loadTasksFromDb()
+        viewModel.loadTasks()
         applyAccentColor()
     }
 
     private fun applyAccentColor() {
-        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        val defaultColor = ContextCompat.getColor(this, R.color.accent_purple)
-        val accent = prefs.getInt(KEY_ACCENT_COLOR, defaultColor)
+        val accent = getAccentColor()
 
         val tvAppTitle: TextView = findViewById(R.id.tvAppTitle)
         val fabAddTask: FloatingActionButton = findViewById(R.id.fabAddTask)
@@ -212,22 +245,17 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun getAccentColor(): Int {
+        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        val defaultColor = ContextCompat.getColor(this, R.color.accent_purple)
+        return prefs.getInt(KEY_ACCENT_COLOR, defaultColor)
+    }
+
     private fun adjustAlpha(color: Int, factor: Float): Int {
         val alpha = (Color.alpha(color) * factor).toInt()
         val red = Color.red(color)
         val green = Color.green(color)
         val blue = Color.blue(color)
         return Color.argb(alpha, red, green, blue)
-    }
-
-    private fun loadTasksFromDb() {
-        Thread {
-            val db = TaskDatabase.getDatabase(this)
-            val tasks = db.taskDao().getAllTasks()
-
-            runOnUiThread {
-                adapter.submitList(tasks)
-            }
-        }.start()
     }
 }
