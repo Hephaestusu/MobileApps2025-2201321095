@@ -36,4 +36,5 @@ class MainActivityTest {
         onView(withText(testTitle))
             .check(matches(isDisplayed()))
     }
+
 }
