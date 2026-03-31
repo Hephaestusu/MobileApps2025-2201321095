@@ -7,13 +7,17 @@ import android.os.Bundle
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 
 class AddEditTaskActivity : AppCompatActivity() {
 
     private var taskId: Int? = null
+    private val aiRepository = AiRepository()
 
     companion object {
         private const val PREFS_NAME = "settings"
@@ -29,6 +33,7 @@ class AddEditTaskActivity : AppCompatActivity() {
         } else {
             AppCompatDelegate.MODE_NIGHT_NO
         }
+
         if (AppCompatDelegate.getDefaultNightMode() != targetMode) {
             AppCompatDelegate.setDefaultNightMode(targetMode)
         }
@@ -41,6 +46,7 @@ class AddEditTaskActivity : AppCompatActivity() {
         val btnSave: Button = findViewById(R.id.btnSave)
         val btnCancel: Button = findViewById(R.id.btnCancel)
         val btnShare: Button = findViewById(R.id.btnShare)
+        val btnGenerateAi: Button = findViewById(R.id.btnGenerateAi)
 
         val idFromIntent = intent.getIntExtra("task_id", -1)
         if (idFromIntent != -1) {
@@ -49,6 +55,42 @@ class AddEditTaskActivity : AppCompatActivity() {
             val descFromIntent = intent.getStringExtra("task_description") ?: ""
             etTitle.setText(titleFromIntent)
             etDescription.setText(descFromIntent)
+        }
+
+        btnGenerateAi.setOnClickListener {
+            val title = etTitle.text.toString().trim()
+
+            if (title.isEmpty()) {
+                etTitle.error = "Title is required for AI generation"
+                return@setOnClickListener
+            }
+
+            btnGenerateAi.isEnabled = false
+            btnGenerateAi.text = "Generating..."
+
+            lifecycleScope.launch {
+                val result = aiRepository.generateSubtasks(title)
+
+                val currentText = etDescription.text.toString().trim()
+                val newText = if (currentText.isEmpty()) {
+                    result
+                } else {
+                    currentText + "\n\n--- AI Generated ---\n" + result
+                }
+
+                etDescription.setText(newText)
+
+                btnGenerateAi.isEnabled = true
+                btnGenerateAi.text = "Generate with AI"
+
+                if (result.startsWith("Generation error")) {
+                    Toast.makeText(
+                        this@AddEditTaskActivity,
+                        result,
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            }
         }
 
         btnSave.setOnClickListener {
@@ -118,6 +160,7 @@ class AddEditTaskActivity : AppCompatActivity() {
         val btnSave: Button = findViewById(R.id.btnSave)
         val btnCancel: Button = findViewById(R.id.btnCancel)
         val btnShare: Button = findViewById(R.id.btnShare)
+        val btnGenerateAi: Button = findViewById(R.id.btnGenerateAi)
 
         tvScreenTitle.setTextColor(accent)
 
@@ -125,10 +168,13 @@ class AddEditTaskActivity : AppCompatActivity() {
         btnSave.backgroundTintList = tint
         btnCancel.backgroundTintList = tint
         btnShare.backgroundTintList = tint
+        btnGenerateAi.backgroundTintList = tint
+
         val textColor = if (isColorDark(accent)) Color.WHITE else Color.BLACK
         btnSave.setTextColor(textColor)
         btnCancel.setTextColor(textColor)
         btnShare.setTextColor(textColor)
+        btnGenerateAi.setTextColor(textColor)
     }
 
     private fun isColorDark(color: Int): Boolean {

@@ -14,7 +14,9 @@ class AiRepository {
         return try {
             val prompt = """
                 Break the task into clear actionable subtasks.
-                Return only a bullet list.
+                Return a clean numbered list.
+                Do not add intro text.
+                Do not add conclusion text.
                 Task: $taskText
             """.trimIndent()
 
